@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据录入表单</title>
+    <style>
+        body { font-family: "Microsoft YaHei", sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="tel"], input[type="date"], select {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 14px;
+        }
+        button { background: #07C160; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background: #069e4a; }
+        .success { color: green; text-align: center; margin-top: 10px; }
+        .error { color: red; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>数据录入</h2>
+        <form id="dataForm">
+            <!-- 日期 -->
+            <div class="form-group">
+                <label for="fn8TJd">日期</label>
+                <input type="date" id="fn8TJd" name="fn8TJd" required>
+            </div>
+
+            <!-- 姓名 -->
+            <div class="form-group">
+                <label for="f04Gwj">姓名</label>
+                <input type="text" id="f04Gwj" name="f04Gwj" placeholder="请输入姓名" required>
+            </div>
+
+            <!-- 电话 -->
+            <div class="form-group">
+                <label for="ftQMc5">电话</label>
+                <input type="tel" id="ftQMc5" name="ftQMc5" placeholder="请输入电话" required>
+            </div>
+
+            <!-- 访问人员 (下拉选择) -->
+            <div class="form-group">
+                <label for="ftk5Tx">访问人员</label>
+                <select id="ftk5Tx" name="ftk5Tx" required>
+                    <option value="">请选择访问人员</option>
+                    <option value="2">人员A (ID: 2)</option>
+                    <option value="3">人员B (ID: 3)</option>
+                    <option value="4">人员C (ID: 4)</option>
+                </select>
+            </div>
+
+            <button type="submit">提交数据</button>
+        </form>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        // ⚠️ 请在这里修改你的 Webhook 地址
+        const WEBHOOK_URL = "https://qyapi.weixin.qq.com/cgi-bin/wedoc/smartsheet/webhook?key=2iiUppqWcVdTFhYSaqSZchIXeZL6RIIAd7sXFYNozR8X3hyHITR5Sac2GumHdUjlX7dTuNIe7pFnOSr64WLXlUhdipZCJI6hgePIO9s6EWOV";
+
+        document.getElementById('dataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = '';
+            messageEl.className = '';
+
+            // 1. 获取表单值
+            const formData = {
+                fn8TJd: document.getElementById('fn8TJd').value,
+                f04Gwj: document.getElementById('f04Gwj').value,
+                ftQMc5: document.getElementById('ftQMc5').value,
+                ftk5Tx: document.getElementById('ftk5Tx').value // 这里是选中的 user_id
+            };
+
+            // 2. 按照你提供的 JSON 结构进行组装
+            // 注意：日期如果为空，后端可能需要空字符串，这里不做默认值处理
+            const payload = {
+                "schema": {
+                    "fn8TJd": "日期",
+                    "f04Gwj": "姓名",
+                    "ftQMc5": "电话",
+                    "ftk5Tx": "访问人员"
+                },
+                "add_records": [
+                    {
+                        "values": {
+                            "fn8TJd": formData.fn8TJd || "", // 保持空字符串格式
+                            "f04Gwj": formData.f04Gwj,
+                            "ftQMc5": formData.ftQMc5,
+                            "ftk5Tx": formData.ftk5Tx ? [
+                                {
+                                    "user_id": formData.ftk5Tx
+                                }
+                            ] : [] // 如果没选，给个空数组，或者根据后端需求调整
+                        }
+                    }
+                ]
+            };
+
+            // 3. 发送数据
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (response.ok) {
+                    messageEl.className = 'success';
+                    messageEl.textContent = '数据同步成功！';
+                    document.getElementById('dataForm').reset();
+                } else {
+                    throw new Error('提交失败');
+                }
+            })
+            .catch(error => {
+                messageEl.className = 'error';
+                messageEl.textContent = '网络错误，请检查 Webhook 地址！';
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
